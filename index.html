@@ -3,292 +3,887 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رحلة الجروب 2025 - خريطة مشتركة</title>
+    <title>رحلة الجروب - موقع مشترك 2025</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <style>
         :root {
-            --primary: #00ff88;
-            --bg: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            --card: rgba(20, 20, 40, 0.95);
-            --text: #ffffff;
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --success: #4facfe;
+            --danger: #fa709a;
+            --dark: #1a1a2e;
+            --light: #ffffff;
         }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { height: 100%; font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
-        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-        /* شاشة الترحيب */
-        .welcome-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 9999;
-            backdrop-filter: blur(12px);
+        /* Map Container */
+        #map { 
+            height: 100vh; 
+            width: 100%; 
+            opacity: 0;
+            transition: opacity 0.5s;
         }
-        .welcome-card {
-            background: var(--card); border-radius: 28px; padding: 40px 30px; width: 90%; max-width: 420px; text-align: center;
-            box-shadow: 0 25px 80px rgba(0,0,0,0.7); border: 1px solid rgba(0,255,136,0.3);
-            animation: float 6s ease-in-out infinite;
-        }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-        .welcome-card h1 { font-size: 2.6rem; background: linear-gradient(90deg, #00ff88, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 15px 0; }
-        .welcome-card i { font-size: 5rem; color: var(--primary); margin-bottom: 20px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        input#nameInput {
-            width: 100%; padding: 18px; margin: 20px 0; border: none; border-radius: 16px; background: rgba(255,255,255,0.1); color: white; font-size: 1.3rem; text-align: center;
-        }
-        input#nameInput:focus { outline: 3px solid var(--primary); background: rgba(255,255,255,0.15); }
-        .start-btn {
-            background: linear-gradient(45deg, var(--primary), #00d4ff); color: #000; border: none; padding: 18px 50px; font-size: 1.4rem; font-weight: bold;
-            border-radius: 50px; cursor: pointer; width: 100%; transition: all 0.3s;
-        }
-        .start-btn:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,255,136,0.5); }
+        
+        #map.show { opacity: 1; }
 
-        /* زر فتح القائمة */
-        .menu-btn {
-            position: fixed; top: 20px; right: 20px; background: var(--primary); color: #000; width: 60px; height: 60px; border-radius: 50%;
-            border: none; font-size: 1.8rem; cursor: pointer; z-index: 1000; box-shadow: 0 8px 25px rgba(0,0,0,0.5); transition: 0.3s;
+        /* Welcome Screen */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.5s, visibility 0.5s;
         }
-        .menu-btn:hover { transform: scale(1.1); }
 
-        /* القائمة الجانبية */
+        .welcome-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .welcome-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 50px 40px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.8s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .welcome-box h1 {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-box p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--light);
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            color: var(--dark);
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1500;
+            display: none;
+        }
+
+        .control-panel.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            color: var(--dark);
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-bottom: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Sidebar */
         .sidebar {
-            position: fixed; top: 0; right: -100%; width: 340px; height: 100%; background: rgba(15,15,40,0.98); z-index: 999; transition: 0.4s ease;
-            padding: 20px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 380px;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1600;
+            overflow-y: auto;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
         }
-        .sidebar.open { right: 0; }
-        .sidebar h2 { margin: 20px 0 15px; color: var(--primary); font-size: 1.5rem; text-align: center; }
-        .member, .place {
-            background: rgba(255,255,255,0.08); padding: 14px; margin: 10px 0; border-radius: 12px; border-right: 4px solid var(--primary);
-        }
-        .place { background: rgba(255,100,100,0.15); cursor: pointer; transition: 0.3s; }
-        .place:hover { background: rgba(255,100,100,0.3); transform: translateX(-8px); }
 
-        /* الدردشة */
-        #chatBox { height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; margin: 15px 0; }
-        .chat-msg { background: rgba(0,255,136,0.2); padding: 10px; margin: 8px 0; border-radius: 12px; border-left: 3px solid var(--primary); }
-        #chatInput { width: 100%; padding: 14px; border: none; border-radius: 12px; background: rgba(255,255,255,0.1); color: white; margin-top: 10px; }
-
-        /* إشعار */
-        .notif {
-            position: fixed; top: 90px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #000; padding: 15px 30px; border-radius: 50px;
-            z-index: 10000; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: notif 3s forwards;
+        .sidebar.open {
+            transform: translateX(0);
         }
-        @keyframes notif { 0% { opacity: 0; top: 50px; } 10% { opacity: 1; top: 90px; } 90% { opacity: 1; } 100% { opacity: 0; top: 50px; } }
+
+        .sidebar h2 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            background: linear-gradient(90deg, var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .member-list {
+            list-style: none;
+        }
+
+        .member-item {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 15px;
+            border-left: 4px solid var(--accent);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .member-item:hover {
+            background: rgba(102, 126, 234, 0.3);
+            transform: translateX(-5px);
+        }
+
+        .chat-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .chat-message {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            animation: messageSlide 0.3s;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-send {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            color: var(--dark);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-send:hover {
+            transform: scale(1.05);
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 20px;
+            min-width: 220px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 1500;
+            display: none;
+        }
+
+        .stats-panel.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            gap: 15px;
+        }
+
+        .stat-item i {
+            font-size: 1.8rem;
+            color: var(--accent);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Places Panel */
+        .places-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 20px;
+            max-width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 1500;
+            display: none;
+        }
+
+        .places-panel.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .place-item {
+            background: rgba(250, 112, 154, 0.2);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            border-left: 4px solid var(--danger);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .place-item:hover {
+            background: rgba(250, 112, 154, 0.3);
+            transform: translateX(5px);
+        }
+
+        .distance-badge {
+            display: inline-block;
+            background: var(--success);
+            color: var(--dark);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            color: var(--dark);
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 2500;
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+            }
+            
+            .stats-panel,
+            .places-panel {
+                max-width: calc(100% - 40px);
+            }
+
+            .welcome-box {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- خريطة -->
-    <div id="map"></div>
-
-    <!-- شاشة البداية -->
-    <div class="welcome-overlay" id="welcomeScreen">
-        <div class="welcome-card">
-            <i class="fas fa-route"></i>
-            <h1>رحلة الجروب 2025</h1>
-            <p style="font-size:1.3rem; margin:20px 0; line-height:1.7;">
-                مرحباً بك في الخريطة المشتركة للرحلة<br>
-                أدخل اسمك لتبدأ وترى الجميع
-            </p>
-            <input type="text" id="nameInput" placeholder="اسمك هنا (مثل: أحمد)" maxlength="20">
-            <button class="start-btn" onclick="startJourney()">
-                <i class="fas fa-play"></i> ابدأ الرحلة الآن
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-box">
+            <div class="welcome-icon">🗺️</div>
+            <h1>رحلة الجروب المشتركة</h1>
+            <p>ابدأ رحلتك واستكشف الأماكن السياحية مع أصدقائك</p>
+            
+            <div class="input-group">
+                <input type="text" id="usernameInput" class="input-field" placeholder="أدخل اسمك (مثال: أحمد)" maxlength="20">
+            </div>
+            
+            <button class="btn-primary" onclick="startJourney()">
+                <i class="fas fa-location-arrow"></i> ابدأ الرحلة
             </button>
         </div>
     </div>
 
-    <!-- زر القائمة -->
-    <button class="menu-btn" onclick="toggleSidebar()">
-        <i class="fas fa-bars"></i>
-    </button>
+    <!-- Map -->
+    <div id="map"></div>
 
-    <!-- القائمة الجانبية -->
-    <div class="sidebar" id="sidebar">
-        <h2>أعضاء الجروب</h2>
-        <div id="membersList">لا يوجد أعضاء بعد...</div>
-
-        <h2>الأماكن السياحية</h2>
-        <div id="placesList"></div>
-
-        <h2>دردشة الجروب</h2>
-        <div id="chatBox"></div>
-        <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendChat()">
-        <button class="start-btn" onclick="sendChat()" style="margin-top:10px; font-size:1rem; padding:12px;">
-            <i class="fas fa-paper-plane"></i> إرسال
+    <!-- Control Panel -->
+    <div class="control-panel" id="controlPanel">
+        <button class="control-btn" onclick="toggleSidebar()" title="الأعضاء والدردشة">
+            <i class="fas fa-users"></i>
+        </button>
+        <button class="control-btn" onclick="centerOnMe()" title="موقعي">
+            <i class="fas fa-crosshairs"></i>
+        </button>
+        <button class="control-btn" onclick="shareMyLocation()" title="مشاركة الموقع">
+            <i class="fas fa-share-alt"></i>
         </button>
     </div>
 
+    <!-- Stats Panel -->
+    <div class="stats-panel" id="statsPanel">
+        <h3 style="margin-bottom: 15px; text-align: center;">📊 الإحصائيات</h3>
+        <div class="stat-item">
+            <i class="fas fa-users"></i>
+            <div>
+                <div style="font-size: 0.85rem; opacity: 0.7;">الأعضاء</div>
+                <div class="stat-value" id="memberCount">1</div>
+            </div>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-map-marked-alt"></i>
+            <div>
+                <div style="font-size: 0.85rem; opacity: 0.7;">الأماكن</div>
+                <div class="stat-value" id="placeCount">10</div>
+            </div>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-route"></i>
+            <div>
+                <div style="font-size: 0.85rem; opacity: 0.7;">أقرب مكان</div>
+                <div class="stat-value" id="nearestDistance">---</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Places Panel -->
+    <div class="places-panel" id="placesPanel">
+        <h3 style="margin-bottom: 15px;">📍 الأماكن السياحية</h3>
+        <div id="placesList"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <h2>👥 أعضاء الجروب</h2>
+        
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-user-friends"></i>
+                <span>الأعضاء المتصلون</span>
+            </div>
+            <ul class="member-list" id="membersList"></ul>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-comments"></i>
+                <span>الدردشة الجماعية</span>
+            </div>
+            <div class="chat-box" id="chatBox"></div>
+            <div class="chat-input-group">
+                <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالة..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <button class="btn-send" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map').setView([24.7136, 46.6753], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap',
-            maxZoom: 19
-        }).addTo(map);
-
-        let myName = "";
-        let myMarker = null;
-        let watchId = null;
-        let members = {}; // سيتم تحديثه من localStorage
-
-        // الأماكن السياحية في الرياض (إحداثيات دقيقة 2025)
-        const touristPlaces = [
-            {name: "قلعة المصمك", lat: 24.6310, lng: 46.7160},
-            {name: "المتحف الوطني", lat: 24.6485, lng: 46.7100},
-            {name: "برج المملكة", lat: 24.7114, lng: 46.6744},
-            {name: "بوليفارد الرياض", lat: 24.7740, lng: 46.6380},
-            {name: "الدرعية التاريخية", lat: 24.7324, lng: 46.5751},
-            {name: "حديقة الملك عبدالله", lat: 24.8100, lng: 46.6300},
-            {name: "واجهة روشن", lat: 24.7920, lng: 46.7040},
-            {name: "قصر الحكم", lat: 24.6300, lng: 46.7120}
+        // Global Variables
+        let map, myMarker, watchId;
+        let myName = '';
+        let myLat = null, myLng = null;
+        let groupMembers = {};
+        let touristMarkers = [];
+        
+        const touristSpots = [
+            { name: 'قلعة المصمك', lat: 24.6310, lng: 46.7160, desc: 'قلعة تاريخية بنيت عام 1865' },
+            { name: 'المتحف الوطني', lat: 24.6485, lng: 46.7100, desc: 'أكبر متحف في السعودية' },
+            { name: 'برج المملكة', lat: 24.7114, lng: 46.6744, desc: 'أيقونة الرياض الحديثة' },
+            { name: 'برج الفيصلية', lat: 24.6900, lng: 46.6850, desc: 'ناطحة سحاب شهيرة' },
+            { name: 'سوق الزل', lat: 24.6340, lng: 46.7170, desc: 'سوق شعبي تقليدي' },
+            { name: 'قصر المربع', lat: 24.6560, lng: 46.7050, desc: 'قصر الملك عبدالعزيز' },
+            { name: 'الدرعية', lat: 24.7324, lng: 46.5751, desc: 'موقع تراث عالمي' },
+            { name: 'وادي حنيفة', lat: 24.6100, lng: 46.6200, desc: 'محمية طبيعية' },
+            { name: 'حديقة الملك عبدالله', lat: 24.8100, lng: 46.6300, desc: 'أكبر حديقة' },
+            { name: 'بوليفارد الرياض', lat: 24.7740, lng: 46.6380, desc: 'منطقة ترفيهية' }
         ];
 
-        // بدء الرحلة
+        // Initialize Map
+        function initMap() {
+            map = L.map('map').setView([24.7136, 46.6753], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        // Start Journey
         function startJourney() {
-            myName = document.getElementById("nameInput").value.trim();
-            if (!myName) {
-                alert("الرجاء إدخال اسمك أولاً!");
+            const username = document.getElementById('usernameInput').value.trim();
+            
+            if (!username) {
+                showNotification('⚠️ الرجاء إدخال اسمك أولاً', 'error');
                 return;
             }
 
-            document.getElementById("welcomeScreen").style.display = "none";
-            notify("جاري تفعيل الموقع... انتظر قليلاً");
-
+            myName = username;
+            
+            // Check Geolocation Support
             if (!navigator.geolocation) {
-                alert("المتصفح لا يدعم تحديد الموقع");
+                showNotification('❌ المتصفح لا يدعم تحديد الموقع', 'error');
                 return;
             }
 
-            // طلب الموقع بدقة عالية + تحديث مستمر
+            // Hide Welcome Screen
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            
+            // Show Loading
+            showNotification('🔍 جاري تحديد موقعك...', 'info');
+
+            // Initialize Map
+            setTimeout(() => {
+                initMap();
+                document.getElementById('map').classList.add('show');
+                requestLocation();
+            }, 500);
+        }
+
+        // Request Location
+        function requestLocation() {
             watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-
-                    // تحديث ماركر المستخدم
-                    if (myMarker) map.removeLayer(myMarker);
-                    myMarker = L.marker([lat, lng], {
-                        icon: L.divIcon({
-                            html: `<div style="background:#00ff88;color:#000;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:18px;box-shadow:0 0 20px #00ff88;">${myName}</div>`,
-                            iconSize: [null, null]
-                        })
-                    }).addTo(map).bindPopup(`<b>${myName}</b><br>أنت هنا الآن!`).openPopup();
-
-                    map.setView([lat, lng], 14);
-
-                    // حفظ موقعي في localStorage (للمشاركة مع الآخرين)
-                    const data = JSON.parse(localStorage.getItem("trip2025") || "{}");
-                    data[myName] = { lat, lng, time: Date.now() };
-                    localStorage.setItem("trip2025", JSON.stringify(data));
-
-                    loadAllMembersAndPlaces();
+                position => {
+                    myLat = position.coords.latitude;
+                    myLng = position.coords.longitude;
+                    
+                    if (!myMarker) {
+                        onLocationSuccess();
+                    } else {
+                        updateMyLocation();
+                    }
                 },
-                (err) => {
-                    alert("فشل تحديد الموقع: " + err.message + "\nجاري استخدام موقع تقريبي...");
-                    fallbackLocation();
+                error => {
+                    console.error('Location Error:', error);
+                    showNotification('⚠️ تعذر تحديد الموقع الدقيق، استخدام موقع افتراضي', 'warning');
+                    
+                    // Use Default Location (Riyadh Center)
+                    myLat = 24.7136;
+                    myLng = 46.6753;
+                    onLocationSuccess();
                 },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
             );
         }
 
-        // في حالة فشل GPS
-        function fallbackLocation() {
-            const lat = 24.7136, lng = 46.6753;
-            myMarker = L.marker([lat, lng], {
-                icon: L.divIcon({html: `<div style="background:#ff6b6b;color:white;padding:10px 20px;border-radius:30px;font-weight:bold;">${myName} (تقريبي)</div>`})
-            }).addTo(map);
-            map.setView([lat, lng], 12);
-            loadAllMembersAndPlaces();
+        // On Location Success
+        function onLocationSuccess() {
+            showNotification('✅ تم تحديد موقعك بنجاح!', 'success');
+            
+            // Show Panels
+            document.getElementById('controlPanel').classList.add('show');
+            document.getElementById('statsPanel').classList.add('show');
+            document.getElementById('placesPanel').classList.add('show');
+            
+            // Update Map View
+            map.setView([myLat, myLng], 13);
+            
+            // Add My Marker
+            addMyMarker();
+            
+            // Add Tourist Spots
+            addTouristSpots();
+            
+            // Add to Group Members
+            addMember(myName, myLat, myLng);
+            
+            // Update UI
+            updateUI();
         }
 
-        // تحميل أعضاء الجروب والأماكن
-        function loadAllMembersAndPlaces() {
-            const data = JSON.parse(localStorage.getItem("trip2025") || "{}");
+        // Add My Marker
+        function addMyMarker() {
+            const color = getRandomColor();
+            
+            myMarker = L.marker([myLat, myLng], {
+                icon: L.divIcon({
+                    className: 'user-marker',
+                    html: `<div style="background: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 3px solid white;"><i class="fas fa-user" style="color: white; font-size: 18px;"></i></div>`,
+                    iconSize: [40, 40]
+                })
+            }).addTo(map);
+            
+            myMarker.bindPopup(`<b style="color: ${color};">${myName}</b><br>📍 موقعك الحالي`);
+            
+            groupMembers[myName] = { lat: myLat, lng: myLng, marker: myMarker, color };
+        }
 
-            // مسح ماركرات الأعضاء القدامى (ما عدا ماركر المستخدم الحالي)
-            map.eachLayer(l => {
-                if (l instanceof L.Marker && l !== myMarker && !l.isPlace) map.removeLayer(l);
-            });
-
-            let membersHtml = "";
-            Object.entries(data).forEach(([name, info]) => {
-                if (name === myName) return;
-
-                const minutesAgo = Math.floor((Date.now() - info.time) / 60000);
-                const status = minutesAgo < 5 ? "متصل الآن" : `آخر ظهور: ${minutesAgo} دقيقة`;
-
-                L.marker([info.lat, info.lng], {
-                    icon: L.divIcon({html: `<div style="background:#4ecdc4;color:#000;padding:8px 16px;border-radius:25px;font-weight:bold;">${name}</div>`})
-                }).addTo(map).bindPopup(`<b>${name}</b><br>${status}`);
-
-                membersHtml += `<div class="member"><strong>${name}</strong><br><small>${status}</small></div>`;
-            });
-            document.getElementById("membersList").innerHTML = membersHtml || "<div style='color:#666; text-align:center;'>لا يوجد أعضاء آخرون حالياً</div>";
-
-            // الأماكن السياحية (تُضاف مرة واحدة فقط)
-            if (!map.placesAdded) {
-                let placesHtml = "";
-                touristPlaces.forEach(p => {
-                    const marker = L.marker([p.lat, p.lng], {
-                        icon: L.divIcon({html: `<div style="background:#ff4757;color:white;padding:10px 16px;border-radius:25px;font-weight:bold;">${p.name}</div>`})
-                    }).addTo(map);
-                    marker.isPlace = true;
-
-                    marker.bindPopup(`
-                        <b style="font-size:1.2rem;">${p.name}</b><br><br>
-                        <button onclick="goToPlace(${p.lat},${p.lng})" style="background:#00ff88;color:#000;padding:12px;border:none;border-radius:25px;width:100%;font-weight:bold;cursor:pointer;">
-                            فتح المسار في جوجل مابس
-                        </button>
-                    `);
-
-                    placesHtml += `<div class="place" onclick="goToPlace(${p.lat},${p.lng})">${p.name}</div>`;
-                });
-                document.getElementById("placesList").innerHTML = placesHtml;
-                map.placesAdded = true;
+        // Update My Location
+        function updateMyLocation() {
+            if (myMarker) {
+                myMarker.setLatLng([myLat, myLng]);
+                groupMembers[myName].lat = myLat;
+                groupMembers[myName].lng = myLng;
+                updateDistances();
             }
         }
 
-        // فتح المسار في جوجل مابس
-        function goToPlace(lat, lng) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                const url = `https://www.google.com/maps/dir/?api=1&origin=${pos.coords.latitude},${pos.coords.longitude}&destination=${lat},${lng}&travelmode=driving`;
-                window.open(url, '_blank');
-            }, () => {
-                alert("يجب تفعيل الموقع أولاً!");
+        // Add Tourist Spots
+        function addTouristSpots() {
+            touristSpots.forEach((spot, idx) => {
+                const marker = L.marker([spot.lat, spot.lng], {
+                    icon: L.divIcon({
+                        className: 'place-marker',
+                        html: `<div style="background: #fa709a; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 3px 10px rgba(0,0,0,0.3); border: 2px solid white;">${idx + 1}</div>`,
+                        iconSize: [35, 35]
+                    })
+                }).addTo(map);
+
+                const distance = calculateDistance(myLat, myLng, spot.lat, spot.lng);
+
+                marker.bindPopup(`
+                    <div style="text-align: center; padding: 10px; min-width: 200px;">
+                        <h4 style="margin: 0 0 10px; color: #667eea;">${spot.name}</h4>
+                        <p style="margin: 5px 0; color: #666; font-size: 0.9rem;">${spot.desc}</p>
+                        <p style="margin: 10px 0; font-weight: bold; color: #fa709a;">📍 ${distance.toFixed(1)} كم</p>
+                        <button onclick="navigateTo(${spot.lat}, ${spot.lng})" style="background: linear-gradient(135deg, #f093fb, #4facfe); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; width: 100%;">
+                            🧭 اتجاهات الوصول
+                        </button>
+                    </div>
+                `);
+
+                touristMarkers.push({ ...spot, marker, distance });
             });
+
+            updatePlacesList();
         }
 
-        // إرسال رسالة دردشة
-        function sendChat() {
-            const input = document.getElementById("chatInput");
-            const msg = input.value.trim();
-            if (!msg) return;
-            const chat = document.getElementById("chatBox");
-            const time = new Date().toLocaleTimeString('ar', {hour: '2-digit', minute: '2-digit'});
-            chat.innerHTML += `<div class="chat-msg"><strong>${myName}:</strong> ${msg}<br><small style="float:left;color:#aaa;">${time}</small></div>`;
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
+        // Calculate Distance
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // إشعار مؤقت
-        function notify(text) {
-            const n = document.createElement('div');
-            n.className = 'notif';
-            n.textContent = text;
-            document.body.appendChild(n);
-            setTimeout(() => n.remove(), 3000);
+        // Update Distances
+        function updateDistances() {
+            touristMarkers.forEach(spot => {
+                spot.distance = calculateDistance(myLat, myLng, spot.lat, spot.lng);
+            });
+            updatePlacesList();
+            updateStats();
         }
 
-        // فتح/إغلاق القائمة
+        // Update Places List
+        function updatePlacesList() {
+            const sorted = [...touristMarkers].sort((a, b) => a.distance - b.distance);
+            const html = sorted.map(spot => `
+                <div class="place-item" onclick="focusOnPlace(${spot.lat}, ${spot.lng})">
+                    <strong>${spot.name}</strong>
+                    <br><small style="opacity: 0.8;">${spot.desc}</small>
+                    <br><span class="distance-badge">${spot.distance.toFixed(1)} كم</span>
+                </div>
+            `).join('');
+            document.getElementById('placesList').innerHTML = html;
+        }
+
+        // Update Stats
+        function updateStats() {
+            document.getElementById('memberCount').textContent = Object.keys(groupMembers).length;
+            
+            if (touristMarkers.length > 0) {
+                const nearest = Math.min(...touristMarkers.map(s => s.distance));
+                document.getElementById('nearestDistance').textContent = nearest.toFixed(1) + ' كم';
+            }
+        }
+
+        // Add Member
+        function addMember(name, lat, lng) {
+            updateMembersList();
+            updateStats();
+        }
+
+        // Update Members List
+        function updateMembersList() {
+            const html = Object.entries(groupMembers).map(([name, data]) => `
+                <li class="member-item" onclick="focusOnMember('${name}')">
+                    <i class="fas fa-user-circle" style="color: ${data.color}; margin-left: 8px; font-size: 1.2rem;"></i>
+                    <strong>${name}</strong> ${name === myName ? '(أنت)' : ''}
+                </li>
+            `).join('');
+            document.getElementById('membersList').innerHTML = html;
+        }
+
+        // Focus on Place
+        function focusOnPlace(lat, lng) {
+            map.setView([lat, lng], 15);
+        }
+
+        // Focus on Member
+        function focusOnMember(name) {
+            const member = groupMembers[name];
+            if (member) {
+                map.setView([member.lat, member.lng], 15);
+                member.marker.openPopup();
+            }
+        }
+
+        // Navigate To
+        function navigateTo(lat, lng) {
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${myLat},${myLng}&destination=${lat},${lng}&travelmode=driving`;
+            window.open(url, '_blank');
+        }
+
+        // Toggle Sidebar
         function toggleSidebar() {
-            document.getElementById("sidebar").classList.toggle("open");
+            document.getElementById('sidebar').classList.toggle('open');
         }
 
-        // تحديث تلقائي كل 10 ثواني
-        setInterval(loadAllMembersAndPlaces, 10000);
+        // Center on Me
+        function centerOnMe() {
+            if (myLat && myLng) {
+                map.setView([myLat, myLng], 14);
+                showNotification('🎯 تم التوجه إلى موقعك', 'success');
+            }
+        }
 
-        // تنظيف عند إغلاق الصفحة
-        window.onunload = () => {
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-        };
+        // Share My Location
+        function shareMyLocation() {
+            if (myLat && myLng) {
+                const url = `https://www.google.com/maps?q=${myLat},${myLng}`;
+                navigator.clipboard.writeText(url).then(() => {
+                    showNotification('✅ تم نسخ رابط موقعك', 'success');
+                });
+            }
+        }
+
+        // Send Message
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            
+            if (!msg) return;
+            
+            const time = new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            const color = groupMembers[myName]?.color || '#667eea';
+            
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML += `
+                <div class="chat-message">
+                    <strong style="color: ${color};">${myName}</strong>
+                    <span style="float: left; font-size: 0.8rem; opacity: 0.6;">${time}</span>
+                    <div style="clear: both; margin-top: 5px;">${msg}</div>
+                </div>
+            `;
+            
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            showNotification('✉️ تم إرسال الرسالة', 'success');
+        }
+
+        // Show Notification
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Get Random Color
+        function getRandomColor() {
+            const colors = ['#667eea', '#fa709a', '#4facfe', '#f093fb', '#764ba2', '#00c9ff'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // Update UI
+        function updateUI() {
+            updateMembersList();
+            updatePlacesList();
+            updateStats();
+        }
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
     </script>
 </body>
 </html>
