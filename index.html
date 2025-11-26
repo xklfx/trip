@@ -3,123 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تحديد موقعك بدقة عالية جدًا</title>
+    <title>رحلة الجروب 2025 - خريطة مشتركة</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
     <style>
-        body, html { margin:0; padding:0; height:100%; font-family: bold 18px Arial; }
-        #map { width:100%; height:100%; }
-        .info {
-            position: absolute;
-            top: 15px; left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.85);
-            color: #0f0;
-            padding: 15px 30px;
-            border-radius: 20px;
-            z-index: 10000;
-            text-align: center;
-            box-shadow: 0 0 30px #0f0;
-            min-width: 300px;
+        :root {
+            --primary: #00ff88;
+            --bg: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            --card: rgba(20, 20, 40, 0.95);
+            --text: #ffffff;
         }
-        .glow { text-shadow: 0 0 15px #0f0; }
-        .acc { color:#ff0; font-size:22px; margin:10px 0; }
-        button {
-            margin-top:15px;
-            padding:14px 35px;
-            font-size:20px;
-            background:#00ff00;
-            color:#000;
-            border:none;
-            border-radius:50px;
-            cursor:pointer;
-            font-weight:bold;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { height: 100%; font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        /* شاشة الترحيب */
+        .welcome-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; z-index: 9999;
+            backdrop-filter: blur(12px);
         }
+        .welcome-card {
+            background: var(--card); border-radius: 28px; padding: 40px 30px; width: 90%; max-width: 420px; text-align: center;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.7); border: 1px solid rgba(0,255,136,0.3);
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        .welcome-card h1 { font-size: 2.6rem; background: linear-gradient(90deg, #00ff88, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 15px 0; }
+        .welcome-card i { font-size: 5rem; color: var(--primary); margin-bottom: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        input#nameInput {
+            width: 100%; padding: 18px; margin: 20px 0; border: none; border-radius: 16px; background: rgba(255,255,255,0.1); color: white; font-size: 1.3rem; text-align: center;
+        }
+        input#nameInput:focus { outline: 3px solid var(--primary); background: rgba(255,255,255,0.15); }
+        .start-btn {
+            background: linear-gradient(45deg, var(--primary), #00d4ff); color: #000; border: none; padding: 18px 50px; font-size: 1.4rem; font-weight: bold;
+            border-radius: 50px; cursor: pointer; width: 100%; transition: all 0.3s;
+        }
+        .start-btn:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,255,136,0.5); }
+
+        /* زر فتح القائمة */
+        .menu-btn {
+            position: fixed; top: 20px; right: 20px; background: var(--primary); color: #000; width: 60px; height: 60px; border-radius: 50%;
+            border: none; font-size: 1.8rem; cursor: pointer; z-index: 1000; box-shadow: 0 8px 25px rgba(0,0,0,0.5); transition: 0.3s;
+        }
+        .menu-btn:hover { transform: scale(1.1); }
+
+        /* القائمة الجانبية */
+        .sidebar {
+            position: fixed; top: 0; right: -100%; width: 340px; height: 100%; background: rgba(15,15,40,0.98); z-index: 999; transition: 0.4s ease;
+            padding: 20px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+        }
+        .sidebar.open { right: 0; }
+        .sidebar h2 { margin: 20px 0 15px; color: var(--primary); font-size: 1.5rem; text-align: center; }
+        .member, .place {
+            background: rgba(255,255,255,0.08); padding: 14px; margin: 10px 0; border-radius: 12px; border-right: 4px solid var(--primary);
+        }
+        .place { background: rgba(255,100,100,0.15); cursor: pointer; transition: 0.3s; }
+        .place:hover { background: rgba(255,100,100,0.3); transform: translateX(-8px); }
+
+        /* الدردشة */
+        #chatBox { height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; margin: 15px 0; }
+        .chat-msg { background: rgba(0,255,136,0.2); padding: 10px; margin: 8px 0; border-radius: 12px; border-left: 3px solid var(--primary); }
+        #chatInput { width: 100%; padding: 14px; border: none; border-radius: 12px; background: rgba(255,255,255,0.1); color: white; margin-top: 10px; }
+
+        /* إشعار */
+        .notif {
+            position: fixed; top: 90px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #000; padding: 15px 30px; border-radius: 50px;
+            z-index: 10000; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: notif 3s forwards;
+        }
+        @keyframes notif { 0% { opacity: 0; top: 50px; } 10% { opacity: 1; top: 90px; } 90% { opacity: 1; } 100% { opacity: 0; top: 50px; } }
     </style>
 </head>
 <body>
 
-<div class="info" id="status">
-    <div class="glow">جاري طلب إذن تحديد الموقع...</div>
-    <div class="acc" id="accuracy"></div>
-    <div id="coords"></div>
-    <button onclick="startLocation()">إعادة تحديد الموقع</button>
-</div>
+    <!-- خريطة -->
+    <div id="map"></div>
 
-<div id="map"></div>
+    <!-- شاشة البداية -->
+    <div class="welcome-overlay" id="welcomeScreen">
+        <div class="welcome-card">
+            <i class="fas fa-route"></i>
+            <h1>رحلة الجروب 2025</h1>
+            <p style="font-size:1.3rem; margin:20px 0; line-height:1.7;">
+                مرحباً بك في الخريطة المشتركة للرحلة<br>
+                أدخل اسمك لتبدأ وترى الجميع
+            </p>
+            <input type="text" id="nameInput" placeholder="اسمك هنا (مثل: أحمد)" maxlength="20">
+            <button class="start-btn" onclick="startJourney()">
+                <i class="fas fa-play"></i> ابدأ الرحلة الآن
+            </button>
+        </div>
+    </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    const map = L.map('map').setView([24.7136, 46.6753], 6);
-    L.tileLayer('https://{s.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    <!-- زر القائمة -->
+    <button class="menu-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
 
-    let marker, circle;
+    <!-- القائمة الجانبية -->
+    <div class="sidebar" id="sidebar">
+        <h2>أعضاء الجروب</h2>
+        <div id="membersList">لا يوجد أعضاء بعد...</div>
 
-    function startLocation() {
-        document.getElementById('status').innerHTML = 
-            '<div class="glow">جاري طلب إذن تحديد الموقع...</div>';
+        <h2>الأماكن السياحية</h2>
+        <div id="placesList"></div>
 
-        if (!navigator.geolocation) {
-            document.getElementById('status').innerHTML = 
-                '<div style="color:red">المتصفح لا يدعم تحديد الموقع</div>';
-            return;
+        <h2>دردشة الجروب</h2>
+        <div id="chatBox"></div>
+        <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendChat()">
+        <button class="start-btn" onclick="sendChat()" style="margin-top:10px; font-size:1rem; padding:12px;">
+            <i class="fas fa-paper-plane"></i> إرسال
+        </button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([24.7136, 46.6753], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+
+        let myName = "";
+        let myMarker = null;
+        let watchId = null;
+        let members = {}; // سيتم تحديثه من localStorage
+
+        // الأماكن السياحية في الرياض (إحداثيات دقيقة 2025)
+        const touristPlaces = [
+            {name: "قلعة المصمك", lat: 24.6310, lng: 46.7160},
+            {name: "المتحف الوطني", lat: 24.6485, lng: 46.7100},
+            {name: "برج المملكة", lat: 24.7114, lng: 46.6744},
+            {name: "بوليفارد الرياض", lat: 24.7740, lng: 46.6380},
+            {name: "الدرعية التاريخية", lat: 24.7324, lng: 46.5751},
+            {name: "حديقة الملك عبدالله", lat: 24.8100, lng: 46.6300},
+            {name: "واجهة روشن", lat: 24.7920, lng: 46.7040},
+            {name: "قصر الحكم", lat: 24.6300, lng: 46.7120}
+        ];
+
+        // بدء الرحلة
+        function startJourney() {
+            myName = document.getElementById("nameInput").value.trim();
+            if (!myName) {
+                alert("الرجاء إدخال اسمك أولاً!");
+                return;
+            }
+
+            document.getElementById("welcomeScreen").style.display = "none";
+            notify("جاري تفعيل الموقع... انتظر قليلاً");
+
+            if (!navigator.geolocation) {
+                alert("المتصفح لا يدعم تحديد الموقع");
+                return;
+            }
+
+            // طلب الموقع بدقة عالية + تحديث مستمر
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+
+                    // تحديث ماركر المستخدم
+                    if (myMarker) map.removeLayer(myMarker);
+                    myMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            html: `<div style="background:#00ff88;color:#000;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:18px;box-shadow:0 0 20px #00ff88;">${myName}</div>`,
+                            iconSize: [null, null]
+                        })
+                    }).addTo(map).bindPopup(`<b>${myName}</b><br>أنت هنا الآن!`).openPopup();
+
+                    map.setView([lat, lng], 14);
+
+                    // حفظ موقعي في localStorage (للمشاركة مع الآخرين)
+                    const data = JSON.parse(localStorage.getItem("trip2025") || "{}");
+                    data[myName] = { lat, lng, time: Date.now() };
+                    localStorage.setItem("trip2025", JSON.stringify(data));
+
+                    loadAllMembersAndPlaces();
+                },
+                (err) => {
+                    alert("فشل تحديد الموقع: " + err.message + "\nجاري استخدام موقع تقريبي...");
+                    fallbackLocation();
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
         }
 
-        // هذا السطر هو اللي بيطلّع السؤال الرسمي للمتصفح فورًا
-        navigator.geolocation.getCurrentPosition(onSuccess, onError, {
-            enableHighAccuracy: true,   // GPS + Wi-Fi + أبراج الجوال
-            timeout: 20000,
-            maximumAge: 0
-        });
-    }
+        // في حالة فشل GPS
+        function fallbackLocation() {
+            const lat = 24.7136, lng = 46.6753;
+            myMarker = L.marker([lat, lng], {
+                icon: L.divIcon({html: `<div style="background:#ff6b6b;color:white;padding:10px 20px;border-radius:30px;font-weight:bold;">${myName} (تقريبي)</div>`})
+            }).addTo(map);
+            map.setView([lat, lng], 12);
+            loadAllMembersAndPlaces();
+        }
 
-    function onSuccess(position) {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const acc = position.coords.accuracy;
+        // تحميل أعضاء الجروب والأماكن
+        function loadAllMembersAndPlaces() {
+            const data = JSON.parse(localStorage.getItem("trip2025") || "{}");
 
-        document.getElementById('accuracy').text').innerHTML = `الدقة: ±${acc.toFixed(0)} متر`;
-        document.getElementById('coords').innerHTML = 
-            `${lat.toFixed(7)}<br>${lng.toFixed(7)}`;
+            // مسح ماركرات الأعضاء القدامى (ما عدا ماركر المستخدم الحالي)
+            map.eachLayer(l => {
+                if (l instanceof L.Marker && l !== myMarker && !l.isPlace) map.removeLayer(l);
+            });
 
-        document.getElementById('status').innerHTML = 
-            = `<div class="glow">تم تحديد موقعك بدقة عالية!</div>
-               <div class="acc">الدقة: ±${acc.toFixed(0)} متر</div>
-               <div>${lat.toFixed(7)}<br>${lng.toFixed(7)}</div>
-               <button onclick="startLocation()">تحديث الموقع</button>`;
+            let membersHtml = "";
+            Object.entries(data).forEach(([name, info]) => {
+                if (name === myName) return;
 
-        map.setView([lat, lng], 18);
+                const minutesAgo = Math.floor((Date.now() - info.time) / 60000);
+                const status = minutesAgo < 5 ? "متصل الآن" : `آخر ظهور: ${minutesAgo} دقيقة`;
 
-        if (marker) map.removeLayer(marker);
-        if (circle) map.removeLayer(circle);
+                L.marker([info.lat, info.lng], {
+                    icon: L.divIcon({html: `<div style="background:#4ecdc4;color:#000;padding:8px 16px;border-radius:25px;font-weight:bold;">${name}</div>`})
+                }).addTo(map).bindPopup(`<b>${name}</b><br>${status}`);
 
-        marker = L.marker([lat, lng]).addTo(map)
-            .bindPopup(`<b>أنت هنا!</b><br>دقة: ±${acc.toFixed(0)} م<br>
-            <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">فتح في جوجل مابس</a>`)
-            .openPopup();
+                membersHtml += `<div class="member"><strong>${name}</strong><br><small>${status}</small></div>`;
+            });
+            document.getElementById("membersList").innerHTML = membersHtml || "<div style='color:#666; text-align:center;'>لا يوجد أعضاء آخرون حالياً</div>";
 
-        circle = L.circle([lat, lng], {
-            color: '#00ff00',
-            fillColor: '#00ff00',
-            fillOpacity: 0.2,
-            radius: acc
-        }).addTo(map);
-    }
+            // الأماكن السياحية (تُضاف مرة واحدة فقط)
+            if (!map.placesAdded) {
+                let placesHtml = "";
+                touristPlaces.forEach(p => {
+                    const marker = L.marker([p.lat, p.lng], {
+                        icon: L.divIcon({html: `<div style="background:#ff4757;color:white;padding:10px 16px;border-radius:25px;font-weight:bold;">${p.name}</div>`})
+                    }).addTo(map);
+                    marker.isPlace = true;
 
-    function onError(err) {
-        let msg = "خطأ غير معروف";
-        if (err.code === 1) msg = "تم رفض إذن الموقع<br>↩️ افتح الإعدادات ← الخصوصية ← الموقع ← اسمح لهذا الموقع";
-        if (err.code === 2) msg = "تعذر تحديد الموقع (جرب مكان مفتوح)";
-        if (err.code === 3) msg = "انتهت المهلة.. أعد المحاولة";
+                    marker.bindPopup(`
+                        <b style="font-size:1.2rem;">${p.name}</b><br><br>
+                        <button onclick="goToPlace(${p.lat},${p.lng})" style="background:#00ff88;color:#000;padding:12px;border:none;border-radius:25px;width:100%;font-weight:bold;cursor:pointer;">
+                            فتح المسار في جوجل مابس
+                        </button>
+                    `);
 
-        document.getElementById('status').innerHTML = 
-            `<div style="color:#f66">${msg}</div>
-             <button onclick="startLocation()">إعادة المحاولة</button>`;
-    }
+                    placesHtml += `<div class="place" onclick="goToPlace(${p.lat},${p.lng})">${p.name}</div>`;
+                });
+                document.getElementById("placesList").innerHTML = placesHtml;
+                map.placesAdded = true;
+            }
+        }
 
-    // أهم سطر: يشتغل فور فتح الصفحة ويطلع السؤال الرسمي للمتصفح
-    window.onload = startLocation;
-</script>
+        // فتح المسار في جوجل مابس
+        function goToPlace(lat, lng) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                const url = `https://www.google.com/maps/dir/?api=1&origin=${pos.coords.latitude},${pos.coords.longitude}&destination=${lat},${lng}&travelmode=driving`;
+                window.open(url, '_blank');
+            }, () => {
+                alert("يجب تفعيل الموقع أولاً!");
+            });
+        }
+
+        // إرسال رسالة دردشة
+        function sendChat() {
+            const input = document.getElementById("chatInput");
+            const msg = input.value.trim();
+            if (!msg) return;
+            const chat = document.getElementById("chatBox");
+            const time = new Date().toLocaleTimeString('ar', {hour: '2-digit', minute: '2-digit'});
+            chat.innerHTML += `<div class="chat-msg"><strong>${myName}:</strong> ${msg}<br><small style="float:left;color:#aaa;">${time}</small></div>`;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // إشعار مؤقت
+        function notify(text) {
+            const n = document.createElement('div');
+            n.className = 'notif';
+            n.textContent = text;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 3000);
+        }
+
+        // فتح/إغلاق القائمة
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("open");
+        }
+
+        // تحديث تلقائي كل 10 ثواني
+        setInterval(loadAllMembersAndPlaces, 10000);
+
+        // تنظيف عند إغلاق الصفحة
+        window.onunload = () => {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+        };
+    </script>
 </body>
 </html>
