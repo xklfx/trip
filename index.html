@@ -3,210 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تحديد الموقع الدقيق وعرضه على الخريطة</title>
-
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+    <title>أسعار الذهب الحية بالريال العماني - [اسم المحل]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS: أنماط الصفحة */
+        /* الألوان: ذهبي (Gold), خلفية داكنة (Dark), تركيز (Accent) */
+        :root {
+            --dark-bg: #1e1e2f;
+            --card-bg: #2c2c3e;
+            --gold: #FFD700;
+            --text-light: #f0f0f0;
+            --text-dim: #b0b0b0;
+            --accent: #5C6BC0; /* لون ثانوي */
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
             margin: 0;
-            background-color: #f4f4f9;
-            color: #333;
-            text-align: center;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif; /* خط عربي حديث */
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: right; /* محاذاة النص لليمين للغة العربية */
         }
 
         .container {
-            background: #fff;
-            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: var(--gold);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .date-time {
+            font-size: 1em;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+
+        .price-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+        }
+
+        .price-card {
+            flex: 1 1 calc(50% - 15px); /* بطاقتان في كل سطر */
+            min-width: 250px;
+            background-color: #383850;
+            padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            max-width: 90%;
-            width: 700px; 
-            margin-bottom: 20px;
+            border-right: 5px solid var(--gold);
+            transition: transform 0.3s, box-shadow 0.3s;
         }
 
-        h1 {
-            color: #007bff;
-            margin-bottom: 20px;
+        .price-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
         }
 
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 25px;
+        .karat {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 5px;
+        }
+
+        .price {
+            font-size: 2.2em;
+            color: var(--text-light);
+            font-weight: 700;
+            direction: ltr; /* لعرض الأرقام بالإنجليزية بشكل صحيح */
+        }
+        
+        .price span {
+            font-size: 0.5em;
+            color: var(--text-dim);
+            margin-right: 5px;
+        }
+
+        .note {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--accent);
+            font-size: 0.9em;
+            color: var(--text-dim);
             text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin-top: 20px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
         }
 
-        button:hover {
-            background-color: #218838;
-        }
-
-        #location-data {
-            margin-top: 25px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            text-align: right;
-            line-height: 1.8;
-            background-color: #e9ecef;
-        }
-
-        .error {
-            color: #dc3545;
-            font-weight: bold;
-        }
-
-        /* تحديد حجم حاوية الخريطة */
-        #mapid {
-            height: 350px; 
-            margin-top: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        .loading {
+            text-align: center;
+            font-size: 1.5em;
+            padding: 50px;
+            color: var(--gold);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📍 محدد الموقع الدقيق وعرضه على الخريطة</h1>
-        <p>اضغط على الزر لتحديد موقعك وعرضه على خريطة OpenStreetMap.</p>
-        <button onclick="getLocation()">تحديد وعرض الموقع</button>
-        
-        <div id="location-data">
-            <p><strong>حالة التحديد:</strong> <span id="status">في انتظار طلبك...</span></p>
-            <p><strong>خط العرض (Latitude):</strong> <span id="latitude">--</span></p>
-            <p><strong>خط الطول (Longitude):</strong> <span id="longitude">--</span></p>
-            <p><strong>الدقة التقريبية (Accuracy):</strong> <span id="accuracy">--</span></p>
+        <div class="header">
+            <h1>✨ أسعار الذهب الحية في [اسم المحل]</h1>
+            <div class="date-time" id="dateTime"></div>
         </div>
-        
-        <div id="mapid"></div>
+
+        <div class="price-list" id="priceList">
+            <div class="loading">جاري تحميل أسعار الذهب...</div>
+        </div>
+
+        <div class="note">
+            <p>الأسعار تقريبية وتعتمد على سعر الأونصة العالمي، وهي بالريال العماني (OMR) لكل جرام. قد تختلف الأسعار النهائية في المتجر.</p>
+        </div>
     </div>
 
     <script>
-        // JavaScript: منطق تحديد وعرض الموقع
+        // *** الجزء الذي يجب تحديثه ببيانات API مجانية وحديثة ***
+        // مثال: افتراض استخدام واجهة API مجانية (مثل CoinGecko لسعر XAU/USD و OMR/USD)
+        // للعرض الاحترافي، قد تحتاج إلى خدمة مثل Metals-API (الخطة المجانية)،
+        // أو Gold Price API (الخطة المجانية)، أو Fixer/Exchangerate.host لسعر الصرف + سعر الذهب من مصدر آخر.
         
-        let map = null; 
-        let currentMarker = null;
-
-        // دالة تهيئة الخريطة (Leaflet)
-        function initializeMap() {
-            if (map) return; 
-
-            // إنشاء كائن الخريطة 
-            // الإحداثيات الافتراضية: الرياض، مع تكبير 5
-            map = L.map('mapid').setView([24.774265, 46.738586], 5); 
-
-            // إضافة طبقة الخريطة (Tiles) من OpenStreetMap
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19,
-            }).addTo(map);
-
-             // إصلاح Leaflet: إجبار الخريطة على حساب حجمها الصحيح بعد الإضافة
-             map.invalidateSize();
-        }
-
-        // دالة طلب تحديد الموقع
-        function getLocation() {
-            initializeMap(); // تأكد من تهيئة الخريطة قبل البدء
-            
-            const status = document.getElementById('status');
-            const latitudeEl = document.getElementById('latitude');
-            const longitudeEl = document.getElementById('longitude');
-            const accuracyEl = document.getElementById('accuracy');
-
-            if (!("geolocation" in navigator)) {
-                status.textContent = "❌ المتصفح لا يدعم خاصية تحديد الموقع.";
-                return;
-            }
-
-            status.textContent = "جاري البحث عن الموقع...";
-            latitudeEl.textContent = "جاري...";
-            longitudeEl.textContent = "جاري...";
-            accuracyEl.textContent = "جاري...";
-
-            // طلب الموقع مع دقة عالية (enableHighAccuracy: true)
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 10000, 
-                maximumAge: 0 
-            };
-
-            // يتم استدعاء success أو error بناءً على النتيجة
-            navigator.geolocation.getCurrentPosition(success, error, options);
-        }
-
-        // دالة النجاح (عند الحصول على الموقع)
-        function success(position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
-            
-            document.getElementById('status').textContent = "✅ تم تحديد الموقع بنجاح وعرضه على الخريطة.";
-            document.getElementById('latitude').textContent = lat.toFixed(6);
-            document.getElementById('longitude').textContent = lon.toFixed(6);
-            document.getElementById('accuracy').textContent = `${accuracy.toFixed(2)} متر`; 
-
-            // تحديث الخريطة
-            const latLng = [lat, lon];
-
-            // إزالة العلامة القديمة إن وجدت
-            if (currentMarker) {
-                map.removeLayer(currentMarker);
-            }
-
-            // إضافة علامة جديدة للموقع المحدد
-            currentMarker = L.marker(latLng).addTo(map)
-                .bindPopup(`**موقعك الحالي**<br>الدقة: ${accuracy.toFixed(2)} متر.`)
-                .openPopup();
-
-            // تحريك مركز الخريطة إلى الموقع الجديد وتكبيرها
-            map.setView(latLng, 16);
-            map.invalidateSize(); // تحديث حجم الخريطة
-        }
-
-        // دالة الخطأ (عند فشل التحديد)
-        function error(err) {
-            const status = document.getElementById('status');
-            let errorMessage = "فشل التحديد.";
-            
-             switch(err.code) {
-                case err.PERMISSION_DENIED:
-                    errorMessage = "🚫 تم رفض طلب تحديد الموقع من قبل المستخدم. (تأكد من إذن الموقع في المتصفح).";
-                    break;
-                case err.POSITION_UNAVAILABLE:
-                    errorMessage = "⚠️ معلومات الموقع غير متوفرة حالياً (GPS/الأبراج غير متوفرة).";
-                    break;
-                case err.TIMEOUT:
-                    errorMessage = "⏱️ انتهت مهلة البحث عن الموقع قبل الحصول على نتيجة.";
-                    break;
-                default:
-                    errorMessage = `❌ حدث خطأ غير معروف: (${err.message})`;
-                    break;
-            }
-            status.innerHTML = `<span class="error">${errorMessage}</span>`;
-            document.getElementById('latitude').textContent = "--";
-            document.getElementById('longitude').textContent = "--";
-            document.getElementById('accuracy').textContent = "--";
-        }
+        // للاحترافية والاعتمادية، يفضل استخدام مفتاح API مجاني من مزود موثوق مثل Metals-API (خطة مجانية محدودة)
+        // لتجنب الحاجة لجلب سعرين مختلفين.
         
-        // **الإصلاح النهائي:** استخدام DOMContentLoaded لضمان تهيئة Leaflet بعد بناء عناصر HTML
-        document.addEventListener('DOMContentLoaded', initializeMap);
+        // مثال على جلب سعر الذهب بالدولار وسعر الصرف OMR/USD (للتوضيح)
+        const GOLD_API_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=gold&vs_currencies=usd'; // سعر الذهب (أونصة) بالدولار
+        const FX_API_URL = 'https://api.exchangerate.host/latest?base=USD&symbols=OMR'; // سعر الدولار مقابل الريال العماني (OMR/USD)
+        
+        // هذه التسمية للمتغيرات هي لتعريف قيم تقريبية في حال فشل الـ API
+        const OUNCE_GRAM = 31.1035; // عدد الجرامات في الأونصة الواحدة
+
+        function updateDateTime() {
+            const now = new Date();
+            const date = now.toLocaleDateString('ar-SA', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const time = now.toLocaleTimeString('ar-SA');
+            document.getElementById('dateTime').textContent = `آخر تحديث: ${date} - ${time}`;
+        }
+
+        async function fetchGoldData() {
+            const priceListElement = document.getElementById('priceList');
+            priceListElement.innerHTML = '<div class="loading">جاري تحميل أسعار الذهب...</div>';
+            
+            try {
+                // 1. جلب سعر الأونصة بالدولار (XAU/USD)
+                const goldResponse = await fetch(GOLD_API_URL);
+                const goldData = await goldResponse.json();
+                const goldPriceUSDPerOunce = goldData.gold.usd;
+
+                // 2. جلب سعر الصرف (USD/OMR)
+                const fxResponse = await fetch(FX_API_URL);
+                const fxData = await fxResponse.json();
+                const OMRRate = fxData.rates.OMR; // كم يساوي الدولار الواحد بالريال العماني (USD/OMR)
+                const OMRPerUSD = 1 / OMRRate; // كم يساوي الريال العماني بالدولار (OMR/USD)
+                
+                // 3. التحويل والحساب
+                const goldPriceOMRPerOunce = goldPriceUSDPerOunce * OMRRate;
+                const goldPriceOMRPerGram_24K = goldPriceOMRPerOunce / OUNCE_GRAM;
+
+                // 4. حساب أسعار القيراط الأخرى
+                const prices = {
+                    '24 قيراط': goldPriceOMRPerGram_24K,
+                    '22 قيراط': goldPriceOMRPerGram_24K * (22 / 24),
+                    '21 قيراط': goldPriceOMRPerGram_24K * (21 / 24),
+                    '18 قيراط': goldPriceOMRPerGram_24K * (18 / 24),
+                };
+                
+                // 5. عرض النتائج
+                let html = '';
+                for (const karat in prices) {
+                    const price = prices[karat].toFixed(3);
+                    html += `
+                        <div class="price-card">
+                            <div class="karat">${karat}</div>
+                            <div class="price">${price} <span>OMR / جرام</span></div>
+                        </div>
+                    `;
+                }
+                priceListElement.innerHTML = html;
+
+            } catch (error) {
+                console.error("Error fetching gold data:", error);
+                priceListElement.innerHTML = '<div class="loading" style="color: #F44336;">⚠️ خطأ في جلب البيانات. قد تحتاج إلى تحديث مفاتيح الـ API أو استخدام واجهة أخرى.</div>';
+            }
+        }
+
+        // --- بدء التشغيل ---
+        updateDateTime();
+        setInterval(updateDateTime, 1000); // تحديث الوقت كل ثانية
+
+        fetchGoldData();
+        // التحديث كل 5 دقائق (300,000 مللي ثانية)
+        setInterval(fetchGoldData, 300000); 
+
+        window.onload = fetchGoldData;
     </script>
 </body>
 </html>
